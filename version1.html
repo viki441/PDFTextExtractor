@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>PDF Text Extractor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+
+<body>
+    <h2>PDF Text Extractor</h2> <label for="myfile">Select a PDF file:</label> <input type="file" id="myfile"
+        accept="application/pdf"> <button id="generateBtn">Generate</button><br><br> <textarea id="text" rows="25"
+        cols="100" placeholder="Extracted text will appear here..."></textarea>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        async function generate() {
+            const fileInput = document.getElementById('myfile');
+            if (!fileInput.files.length)
+                return alert("Please select a PDF file");
+
+
+            const arrayBuffer = await fileInput.files[0].arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            let allText = '';
+
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const content = await page.getTextContent(); console.log(content.items.map(i => i.str));
+                let pageText = content.items.map(i => i.str).join("").normalize('NFC');
+                const latinDiacriticRegex = /[\u0100-\u017F]/; const macronRegex = /[ĀāĒēĪīŌōŪū]|[A-Za-z]\u0304/;
+                const cyrillicRegex = /[\u0400-\u04FF]/;
+                const garbledToCyrillic = { 'À': 'А', 'Á': 'Б', 'Â': 'В', 'Ã': 'Г', 'Ä': 'Д', 'Å': 'Е', 'Æ': 'Ж', 'Ç': 'З', 'È': 'И', 'É': 'Й', 'Ê': 'К', 'Ë': 'Л', 'Ì': 'М', 'Í': 'Н', 'Î': 'О', 'Ï': 'П', 'Ð': 'Р', 'Ñ': 'С', 'Ò': 'Т', 'Ó': 'У', 'Ô': 'Ф', 'Õ': 'Х', 'Ö': 'Ц', '×': 'Ч', 'Ø': 'Ш', 'Ù': 'Щ', 'Ú': 'Ъ', 'Û': 'Ы', 'Ü': 'Ь', 'Ý': 'Э', 'Þ': 'Ю', 'ß': 'Я', 'à': 'а', 'á': 'б', 'â': 'в', 'ã': 'г', 'ä': 'д', 'å': 'е', 'æ': 'ж', 'ç': 'з', 'è': 'и', 'é': 'й', 'ê': 'к', 'ë': 'л', 'ì': 'м', 'í': 'н', 'î': 'о', 'ï': 'п', 'ð': 'р', 'ñ': 'с', 'ò': 'т', 'ó': 'у', 'ô': 'ф', 'õ': 'х', 'ö': 'ц', '÷': 'ч', 'ø': 'ш', 'ù': 'щ', 'ú': 'ъ', 'û': 'ы', 'ü': 'ь', 'ý': 'э', 'þ': 'ю', 'ÿ': 'я' }; 
+                const fixCyrillic = t => t.split('').map(c => garbledToCyrillic[c] || c).join(''); 
+                const lines = pageText.split(/\r?\n/).map(l => fixCyrillic(l));
+                allText += `=== Page ${pageNum} ===\n`;
+
+                lines.forEach(l => {
+                    if (latinDiacriticRegex.test(l) || cyrillicRegex.test(l)) { allText += l + '\n'; }
+                    if (macronRegex.test(l)) {
+                        const debugLine = l.replace(/\u0304/g, '̄');
+                        allText += '=== Line with macron: ' + debugLine + '\n';
+                    }
+                });
+                allText += '\n';
+            }
+            allText = allText.replace(/Зад\./g, '\n\nЗад.');
+            allText = allText.replace(/^\n/, ''); document.getElementById('text').value = allText;
+        }
+        document.getElementById('generateBtn').addEventListener('click', generate); 
+    </script>
+</body>
+</html>
