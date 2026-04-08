@@ -1,5 +1,5 @@
 @font-face {
-  font-family: "sci-fi-font"; /* Name you’ll use in CSS */
+  font-family: "sci-fi-font"; 
   src: url("./assets/fonts/Furore.otf") format("opentype");
   font-weight: normal;
   font-style: normal;
